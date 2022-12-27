@@ -110,56 +110,49 @@ task "annotate" do
   Sequel::Annotate.annotate(Dir['models/**/*.rb'])
 end
 
-last_line = __LINE__
-# Utils
+desc "Fill data for postgres"
+task "fill_data" do
+  ENV['RACK_ENV'] = 'development'
+  require_relative 'models'
+  require './services/calculate_disbursement_service'
+  require 'json'
+  require 'time'
+  DB.loggers.clear
 
-desc "give the application an appropriate name"
-task :setup, [:name] do |t, args|
-  unless name = args[:name]
-    $stderr.puts "ERROR: Must provide a name argument: example: rake \"setup[AppName]\""
-    exit(1)
+  DB[:merchants].delete
+  DB[:shoppers].delete
+  DB[:orders].delete
+  DB[:disbursements].delete
+
+  merchants_file = File.read('./data/merchants.json')
+  orders_file = File.read('./data/orders.json')
+  shoppers_file = File.read('./data/shoppers.json')
+
+  merchants_hash = JSON.parse(merchants_file)
+  orders_hash = JSON.parse(orders_file)
+  shoppers_hash = JSON.parse(shoppers_file)
+
+  merchants_hash['RECORDS'].each do |record|
+    DB[:merchants].insert(record)
+  end
+  
+  orders_hash['RECORDS'].each do |record|
+    DB[:orders].insert(
+      record.merge(
+        {
+          'completed_at' => (record['completed_at'].empty? ? nil : DateTime.parse(record['completed_at'])),
+          'created_at' => DateTime.parse(record['created_at'])
+        }
+      )
+    )
   end
 
-  require 'securerandom'
-  require 'fileutils'
-  lower_name = name.gsub(/([a-z\d])([A-Z])/, '\1_\2').downcase
-  upper_name = lower_name.upcase
-  random_bytes = lambda{[SecureRandom.random_bytes(64).gsub("\x00"){((rand*255).to_i+1).chr}].pack('m').inspect}
-
-  File.write('.env.rb', <<END)
-case ENV['RACK_ENV'] ||= 'development'
-when 'test'
-  ENV['#{upper_name}_SESSION_SECRET'] ||= #{random_bytes.call}.unpack('m')[0]
-  ENV['#{upper_name}_DATABASE_URL'] ||= "postgres:///#{lower_name}_test?user=#{lower_name}"
-when 'production'
-  ENV['#{upper_name}_SESSION_SECRET'] ||= #{random_bytes.call}.unpack('m')[0]
-  ENV['#{upper_name}_DATABASE_URL'] ||= "postgres:///#{lower_name}_production?user=#{lower_name}"
-else
-  ENV['#{upper_name}_SESSION_SECRET'] ||= #{random_bytes.call}.unpack('m')[0]
-  ENV['#{upper_name}_DATABASE_URL'] ||= "postgres:///#{lower_name}_development?user=#{lower_name}"
-end
-END
-
-  %w'views/layout.erb routes/prefix1.rb config.ru app.rb db.rb spec/web/spec_helper.rb spec/web/prefix1_spec.rb'.each do |f|
-    File.write(f, File.read(f).gsub('App', name).gsub('APP', upper_name))
+  shoppers_hash['RECORDS'].each do |record|
+    DB[:shoppers].insert(record)
   end
 
-  File.write(__FILE__, File.read(__FILE__).split("\n")[0...(last_line-2)].join("\n") << "\n")
-  File.write('.gitignore', "/.env.rb\n/coverage\n")
-  File.delete('public/.gitkeep')
-  File.delete('.ci.gemfile')
-  FileUtils.remove_dir('stack-spec')
-  FileUtils.remove_dir('.github')
-end
-
-Rake::Task["default"].clear
-desc "Run specs to make sure stack works properly"
-task :default do
-  sh "#{FileUtils::RUBY} -w stack-spec/stack_spec.rb"
-end
-
-desc "Run specs to make sure stack works properly"
-task :stack_spec_debug do
-  ENV['DEBUG'] = '1'
-  sh "#{FileUtils::RUBY} -w stack-spec/stack_spec.rb"
+  mondays = (DB[:orders].min(:completed_at).to_date..DB[:orders].max(:completed_at).to_date).to_a.select { |day| day.wday == 1 }
+  mondays.each do |monday|
+    CalculateDisbursementService.call(monday)
+  end
 end

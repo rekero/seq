@@ -1,9 +1,8 @@
 require_relative 'models'
 
 require 'roda'
-require 'tilt/sass'
 
-class App < Roda
+class Seq < Roda
   opts[:check_dynamic_arity] = false
   opts[:check_arity] = :warn
 
@@ -77,9 +76,9 @@ class App < Roda
   end
 
   plugin :sessions,
-    key: '_App.session',
+    key: '_Seq.session',
     #cookie_options: {secure: ENV['RACK_ENV'] != 'test'}, # Uncomment if only allowing https:// access
-    secret: ENV.send((ENV['RACK_ENV'] == 'development' ? :[] : :delete), 'APP_SESSION_SECRET')
+    secret: ENV.send((ENV['RACK_ENV'] == 'development' ? :[] : :delete), 'SEQ_SESSION_SECRET')
 
   Unreloader.require('routes', :delete_hook=>proc{|f| hash_branch(File.basename(f).delete_suffix('.rb'))}){}
 
