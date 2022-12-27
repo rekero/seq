@@ -7,7 +7,7 @@
 
 ## Database Setup
 
-sudo -u postgres psql
+`sudo -u postgres psql`
 
 `create user seq with password 'seq' createdb;`
 `create database seq_test owner seq;`
@@ -31,6 +31,9 @@ After that you can make request like
 `http://localhost:9292/main/disbursements?year=2018&month=1&day=1`
 `http://localhost:9292/main/disbursements/3?year=2018&month=1&day=1`
 
+If you want to access console you can use
+`rake dev_irb`
+
 ## Environment Variables Used(in .env.rb)
 
 `#{APP}_DATABASE_URL :: database connection URL to give to Sequel, default is to
@@ -41,7 +44,5 @@ RACK_ENV :: environment to use (production, development, or test), defaults
 
 ## Specs
 
-To run the specs for the application after running `rake setup`,
-run `rake`.  To run specs for the stack itself (to test if the stack itself
-is functioning as expected), run `rake` before running `rake setup`.
+To run the specs for the application after running `rake test_up` you can just simply write `rake`
 
