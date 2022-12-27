@@ -92,12 +92,13 @@ spec = proc do |type|
 end
 spec.call('model')
 spec.call('web')
+spec.call('service')
 
 desc "Run all specs"
-task default: [:model_spec, :web_spec]
+task default: [:model_spec, :web_spec, :service_spec]
 
 desc "Run all specs with coverage"
-task spec_cov: [:model_spec_cov, :web_spec_cov]
+task spec_cov: [:model_spec_cov, :web_spec_cov, :service_spec_cov]
 
 # Other
 
@@ -151,7 +152,7 @@ task "fill_data" do
     DB[:shoppers].insert(record)
   end
 
-  mondays = (DB[:orders].min(:completed_at).to_date..DB[:orders].max(:completed_at).to_date).to_a.select { |day| day.wday == 1 }
+  mondays = (DB[:orders].min(:completed_at).to_date..DB[:orders].max(:completed_at).to_date+7).to_a.select { |day| day.wday == 1 }
   mondays.each do |monday|
     CalculateDisbursementService.call(monday)
   end
