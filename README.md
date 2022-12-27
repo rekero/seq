@@ -1,9 +1,11 @@
 # roda-sequel for sequra
 - You should have ruby and postgresql
+- I used roda+sequel, because i didnt have enough time to install new linux on my pc, so i used WSL and decided to escape any possible rails problems(there is no scaffolding here)
 
 ## Setup
 
 `bundle install`
+- Copy default.env.rb to .env.rb
 
 ## Database Setup
 
@@ -34,7 +36,7 @@ After that you can make request like
 If you want to access console you can use
 `rake dev_irb`
 
-## Environment Variables Used(in .env.rb)
+## Environment Variables Used
 
 `#{APP}_DATABASE_URL :: database connection URL to give to Sequel, default is to
                        create one based on the application's name and RACK_ENV.
