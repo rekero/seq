@@ -1,6 +1,5 @@
 # roda-sequel for sequra
 - You should have ruby and postgresql
-- I used roda+sequel, because i didnt have enough time to install new linux on my pc, so i used WSL and decided to escape any possible rails problems(there is no scaffolding here)
 
 ## Setup
 
